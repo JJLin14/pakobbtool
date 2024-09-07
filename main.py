@@ -34,7 +34,7 @@ def get_current_datetime():
     return datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
 
 def print_main_menu():
-    print(viod + gradient_text("\n\n\n\n\n\n" + " " + get_current_datetime() + " │ 2786910486 │ pakobbtool", "0000FF", "00FFFF"))
+    print(viod + gradient_text("\n\n\n" + " " + get_current_datetime() + " │ 作者：lin │ QQ：2786910486 │ pakobbtool", "0000FF", "00FFFF"))
     print()
     print(viod + gradient_text("┌───────────────────────────────┐", "0000FF", "00FFFF"))
     print(viod + gradient_text("│  PUBG Mobile  │  Peace Elite  │", "0000FF", "00FFFF"))
@@ -42,9 +42,7 @@ def print_main_menu():
     print(viod + gradient_text("│[1] Unpack OBB │[3] Unpack PAK │", "0000FF", "00FFFF"))
     print(viod + gradient_text("│[2] Repack OBB │[4] Repack PAK │", "0000FF", "00FFFF"))
     print(viod + gradient_text("│───────────────────────────────│", "0000FF", "00FFFF"))
-    print(viod + gradient_text("│[5] 帮助                       │", "0000FF", "00FFFF"))
-    print(viod + gradient_text("│───────────────────────────────│", "0000FF", "00FFFF"))
-    print(viod + gradient_text("│[0] 退出                       │", "0000FF", "00FFFF"))
+    print(viod + gradient_text("│[5] 帮助        [0] 退出       │", "0000FF", "00FFFF"))
     print(viod + gradient_text("└───────────────────────────────┘", "0000FF", "00FFFF"))
     print()
 
@@ -86,7 +84,7 @@ def execute_command(command):
     """Execute this shell command and output the result or error."""
     try:
         result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
-        print(gradient_text(result.stdout.strip(), "00FF00", "FFFFFF"))  # Вывод результата команды
+        print(gradient_text(result.stdout.strip(), "00FF00", "FFFFFF"))  #
     except subprocess.CalledProcessError as e:
         print(gradient_text(f"命令执行错误: {e}\n{e.stderr.strip()}", "FF0000", "FFFFFF"))
 
@@ -182,10 +180,10 @@ def main():
                     print(gradient_text("请输入有效整数", "FF0000", "FFFFFF"))
 
         elif choice == '5':
-            print(gradient_text("\n\n这是一个用于PAK (Peace Elite)和OBB (PUBG Mobile)拆解和打包的工具。\n\n如何使用:\n1。将OBB或PAK文件拖放到相应的。\n2目录中。使用选定的菜单与。\n3文件进行交互。OutPut文件夹将包含解压缩的文件。\n4。都准备好了!该工具已准备好使用!\n制作: 2786910486\n\n", "00FFFF", "0000FF"))
+            print(gradient_text("\n\n这是一个用于PAK (Peace Elite)和OBB (PUBG Mobile)拆解和打包的工具\n\n如何使用:\n1将OBB或PAK文件拖放到相应的目录中\n2使用选定的菜单与文件进行交互\n3OutPut文件夹将包含解压缩的文件\n4都准备好了!该工具已准备好使用!\n详细咨询QQ：2786910486\n制作者QQ: 2786910486\n", "00FFFF", "0000FF"))
 
         elif choice == '0':
-            print(gradient_text("输出...", "FF0000", "FFFFFF"))
+            print(gradient_text("退出...", "FF0000", "FFFFFF"))
             break
 
         else:
