@@ -1,0 +1,199 @@
+
+
+math NO_TAIL_INFO = 0   
+quickbmsver "0.11"
+
+math TOC_FILE = 0
+
+# set your AES_KEY here as text or C string ("\x11\x22...") or umodel hex (0x1122...)
+set AES_KEY binary ""
+putarray 10 -1 ""
+math AES_KEY_IS_SET = 0
+
+math ALTERNATIVE_MODE = 0
+math BASE_PATH_INCLUDED = 1
+math DIR_FLAG = 1
+math CHUNK_OFFSET_ABSOLUTE = -1 # default, enabled
+
+goto -0x2C # Chinese PUBG (new)
+get MAGIC long
+get VERSION long
+endian guess VERSION
+if VERSION != 8
+	print "This package is not compatible with the script!"
+	cleanexit
+endif	
+
+findloc OFFSET binary "\x2E\x2E\x2F\x2E\x2E\x2F\x2E\x2E\x2F" 0 "" 0
+if OFFSET = ""
+	findloc OFFSET binary "\x57\x57\x56\x57\x57\x56\x57\x57\x56" 0 "" 0
+	if OFFSET = ""
+		print "This package is not compatible with the script!"
+		cleanexit
+	else
+		math ENCRYPT = 1
+		filexor 0x79
+	endif
+else
+	math ENCRYPT = 0
+endif
+math OFFSET - 4
+goto OFFSET
+callfunction GET_BASE_PATH 1
+
+math EXTRACT = 0
+get FILES long
+filexor "" ""
+for i = 0 < FILES
+	if ENCRYPT = 1
+		filexor 0x79
+	endif
+	callfunction GET_ENTRY 1
+	putarray 5 i OFFSET
+next i
+
+math EXTRACT = 1
+get ENTRIES longlong
+if ENCRYPT = 1
+	get DUMMY byte
+endif
+savepos OFFSET
+get SIZE asize
+math SIZE - OFFSET
+log MEMORY_FILE5 OFFSET SIZE
+math TOC_FILE5 = -5
+
+callfunction GET_NAME_AND_EXTRACT 1
+
+
+startfunction GET_ENTRY
+	getdstring HASH 20
+	get OFFSET longlong
+	get SIZE longlong
+	get ZIP long
+	get ZSIZE longlong
+	getdstring DUMMY2 21
+
+	math CHUNKS = 0
+	math ENCRYPTED = 0
+	if ZIP != 0
+		get CHUNKS long
+		for x = 0 < CHUNKS
+			get CHUNK_OFFSET longlong
+			get CHUNK_END_OFFSET longlong
+			putarray 0 x CHUNK_OFFSET
+			putarray 1 x CHUNK_END_OFFSET
+		next x
+	endif
+	get CHUNK_SIZE long
+	get ENCRYPTED byte	
+	if ENCRYPTED = 1
+		filexor 0x79
+	endif	
+
+	savepos TMP_OFF
+	if EXTRACT == 1
+	if CHUNKS > 0
+		log NAME 0 0
+		append
+		math TMP_SIZE = SIZE
+		for x = 0 < CHUNKS
+			getarray CHUNK_OFFSET 0 x
+			getarray CHUNK_END_OFFSET 1 x
+			math CHUNK_ZSIZE = CHUNK_END_OFFSET
+			math CHUNK_ZSIZE - CHUNK_OFFSET
+			math CHUNK_XSIZE = CHUNK_ZSIZE
+
+			if TMP_SIZE u< CHUNK_SIZE
+				math CHUNK_SIZE = TMP_SIZE
+			endif
+			if ZIP == 0
+				log NAME CHUNK_OFFSET CHUNK_SIZE 0
+			else
+				clog NAME CHUNK_OFFSET CHUNK_ZSIZE CHUNK_SIZE 0
+			endif
+			math TMP_SIZE - CHUNK_SIZE
+		next x
+		append
+	else
+		# the file offset points to an entry containing
+		# the "same" OFFSET ZSIZE SIZE ZIP HASH ZERO fields,
+		# just an additional backup... so let's skip them
+		math BASE_OFFSET = TMP_OFF
+
+		if ZIP == 0
+			log NAME BASE_OFFSET SIZE 0
+		else
+			clog NAME BASE_OFFSET ZSIZE SIZE 0
+		endif
+	endif
+	endif
+	filexor "" ""
+endfunction
+
+startfunction GET_BASE_PATH
+    get NAMESZ long
+	getdstring BASE_PATH NAMESZ
+	if NAMESZ != 0x0A && NAMESZ < 0xFF
+		string BASE_PATH | "../../../"
+		math BASE_PATH_INCLUDED = 0
+	endif
+endfunction
+
+startfunction CHECK_UNICODE
+	if NAMESZ >= 0
+		getdstring RESULT NAMESZ TOC_FILE5
+	else
+		math NAMESZ n NAMESZ
+		math NAMESZ * 2
+		getdstring RESULT NAMESZ TOC_FILE5
+		set RESULT unicode RESULT
+	endif
+endfunction
+
+startfunction GET_NAME_AND_EXTRACT
+	if DIR_FLAG = 1
+		get DIR_COUNT longlong TOC_FILE5
+		math DIR_FLAG = 0
+	endif
+	
+	if DIR_COUNT = 0
+		math DIR_FLAG = 1
+		callfunction GET_NAME_AND_EXTRACT 1
+	else
+		math DIR_COUNT - 1
+		get NAMESZ signed_long TOC_FILE5
+		callfunction CHECK_UNICODE 1
+		string DIR_NAME = RESULT
+		get DIR_FILES longlong TOC_FILE5
+		if DIR_FILES = 0
+			callfunction GET_NAME_AND_EXTRACT 1
+		else 
+			for y = 0 < DIR_FILES
+				math EXTRACT = 1 
+				get NAMESZ signed_long TOC_FILE5
+				if NAMESZ > 0
+					get NAME string TOC_FILE5
+				else
+					callfunction CHECK_UNICODE 1
+					string NAME = RESULT
+				endif
+				string NAME p "%s%s" DIR_NAME NAME
+				if BASE_PATH_INCLUDED == 0
+					string NAME p "%s%s" BASE_PATH NAME
+				endif
+							
+				get ENTRY long TOC_FILE5
+				getarray OFFSET 5 ENTRY
+				goto OFFSET
+				callfunction GET_ENTRY 1
+				
+				math FILES - 1
+				if FILES = 0
+					cleanexit
+				endif
+			next y
+			callfunction GET_NAME_AND_EXTRACT 1
+		endif
+	endif
+endfunction
